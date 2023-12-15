@@ -1,2 +1,6 @@
-declare const PRODUCTION: boolean;
-declare const PREFIX: string;
+declare global {
+  const PRODUCTION: boolean;
+  const PREFIX: string;
+}
+
+export {};

@@ -41,6 +41,19 @@ export class Router {
       this.mode === "hash" ? "hashchange" : "popstate",
       () => this.handleRouteChange()
     );
+
+    this.adjustLinksForGHPages();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public adjustLinksForGHPages(): void {
+    if (PRODUCTION) {
+      const PREFIX = "/otus-SPA-turarov-2023";
+      document.querySelectorAll("a").forEach((link) => {
+        const modifiedLink = link;
+        modifiedLink.href = PREFIX + link.pathname;
+      });
+    }
   }
 
   public getFragment(): string {

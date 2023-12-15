@@ -15,7 +15,7 @@ const config: Config = {
 
   // The directory where Jest should store its cached dependency information
   // cacheDirectory: "C:\\Users\\Learning Work\\AppData\\Local\\Temp\\jest",
-
+  setupFiles: ["<rootDir>/testSetup.js"],
   // Automatically clear mock calls, instances, contexts and results before every test
   clearMocks: true,
 
