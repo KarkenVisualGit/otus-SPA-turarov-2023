@@ -95,7 +95,7 @@ class Router {
     onBeforeEnter?: AsyncRouteHandler
   ): () => void {
     const id = this.generateId();
-    const listener: Listener = { id, match, onEnter, onLeave, onBeforeEnter };
+    const listener: Listener = { id, match, onBeforeEnter, onEnter, onLeave };
     this.routes.push(listener);
 
     return (): void => {
@@ -120,6 +120,22 @@ class Router {
     return (args: RouteArgs): void => {
       // eslint-disable-next-line no-console
       console.info(`[leaving] args=${JSON.stringify(args)}`);
+    };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public someBeforeEnter(content: string): (args: RouteArgs) => Promise<void> {
+    return async (args: RouteArgs): Promise<void> => {
+      // eslint-disable-next-line no-console
+      console.log(`Before entering, args: ${JSON.stringify(args)}`);
+      if (args.currentPath === content) {
+        const rootElement = document.getElementById("root");
+        if (rootElement) {
+          const newElement = document.createElement("div");
+          newElement.innerHTML = `<h2>BeforeEnter: ${content}</h2>`;
+          rootElement.appendChild(newElement);
+        }
+      }
     };
   }
 
@@ -149,8 +165,14 @@ class Router {
 
 const router = new Router("history");
 const unsubscriber = router.on(/.*/, router.createRender("/.*"));
-router.on((path) => path === "/contacts", router.createRender("/contacts"));
-router.on("/about", router.createRender("/about"), router.createLogger());
+// router.on((path) => path === "/contacts", router.createRender("/contacts"));
+router.on(
+  "/about",
+  router.someBeforeEnter("/about"),
+  router.createRender("/about"),
+  router.createLogger()
+);
+router.on("/contacts", router.createRender("/contacts"), router.createLogger());
 router.on("/login", router.createRender("/login"), router.createLogger());
 router.on("/about/us", router.createRender("/about/us"), router.createLogger());
 
