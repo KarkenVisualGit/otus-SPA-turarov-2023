@@ -1,7 +1,9 @@
+type RouterMode = "hash" | "history";
+
 interface HistoryState {
   title: string;
 }
-type Match = RegExp | ((path: string) => boolean) | string;
+type Match = RegExp | string | ((path: string) => boolean);
 type RenderArgs = {
   currentPath: string;
   previousPath: string | null;
@@ -12,120 +14,154 @@ interface RouteArgs {
   previousPath: string | null;
   state: HistoryState;
 }
-type OnEnterOrLeave = (args: RouteArgs) => void;
+
+type AsyncRouteHandler = (args: RouteArgs) => Promise<void> | void;
 
 interface Listener {
   id: number;
   match: Match;
-  onEnter?: OnEnterOrLeave;
-  onLeave?: OnEnterOrLeave;
+  onBeforeEnter?: AsyncRouteHandler;
+  onEnter?: AsyncRouteHandler;
+  onLeave?: AsyncRouteHandler;
 }
 
-function Router() {
-  let listeners: Listener[] = [];
-  // eslint-disable-next-line no-restricted-globals
-  let currentPath: string = location.pathname;
-  let previousPath: string | null = null;
+class Router {
+  private routes: Listener[] = [];
 
-  const isMatch = (match: Match, path: string): boolean =>
-    (match instanceof RegExp && match.test(path)) ||
-    (typeof match === "function" && match(path)) ||
-    (typeof match === "string" && match === path);
+  private mode: RouterMode;
 
-  const handleListener = ({ match, onEnter, onLeave }: Listener): void => {
-    // eslint-disable-next-line no-restricted-globals
-    const args: RouteArgs = { currentPath, previousPath, state: history.state };
+  private currentPath: string = "";
 
-    if (previousPath !== null && isMatch(match, previousPath)) {
-      if (onLeave) {
-        onLeave(args);
+  private previousPath: string | null = null;
+
+  constructor(mode: RouterMode = "hash") {
+    this.mode = mode;
+    this.currentPath = this.getFragment();
+    window.addEventListener(
+      this.mode === "hash" ? "hashchange" : "popstate",
+      () => this.handleRouteChange()
+    );
+  }
+
+  public getFragment(): string {
+    if (this.mode === "history") {
+      return decodeURI(window.location.pathname + window.location.search);
+    }
+    return window.location.hash.slice(1);
+  }
+
+  public async handleRouteChange(): Promise<void> {
+    this.previousPath = this.currentPath;
+    this.currentPath = this.getFragment();
+
+    const args: RouteArgs = {
+      currentPath: this.currentPath,
+      previousPath: this.previousPath,
+      // eslint-disable-next-line no-restricted-globals
+      state: history.state,
+    };
+    // eslint-disable-next-line no-restricted-syntax
+    for (const route of this.routes) {
+      if (Router.isMatch(route.match, this.currentPath)) {
+        if (route.onBeforeEnter)
+          // eslint-disable-next-line no-await-in-loop
+          await route.onBeforeEnter(args);
+        if (route.onEnter)
+          // eslint-disable-next-line no-await-in-loop
+          await route.onEnter(args);
+      }
+      if (this.previousPath && Router.isMatch(route.match, this.previousPath)) {
+        if (route.onLeave)
+          // eslint-disable-next-line no-await-in-loop
+          await route.onLeave(args);
       }
     }
+  }
 
-    if (isMatch(match, currentPath) && onEnter) {
-      onEnter(args);
+  public static isMatch(match: Match, path: string): boolean {
+    if (typeof match === "function") {
+      return match(path);
     }
-  };
+    if (match instanceof RegExp) {
+      return match.test(path);
+    }
+    return match === path;
+  }
 
-  const handleAllListeners = () => listeners.forEach(handleListener);
+  public on(
+    match: RegExp | string | ((path: string) => boolean),
+    onEnter?: AsyncRouteHandler,
+    onLeave?: AsyncRouteHandler,
+    onBeforeEnter?: AsyncRouteHandler
+  ): () => void {
+    const id = this.generateId();
+    const listener: Listener = { id, match, onEnter, onLeave, onBeforeEnter };
+    this.routes.push(listener);
 
-  const generateId = (): number => {
+    return (): void => {
+      this.routes = this.routes.filter((l) => l.id !== id);
+    };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public createRender(content: string): (args: RenderArgs) => void {
+    return (args: RenderArgs) => {
+      // eslint-disable-next-line no-console
+      console.info(`${content} args=${JSON.stringify(args)}`);
+      const rootElement = document.getElementById("root");
+      if (rootElement) {
+        rootElement.innerHTML = `<h2>${content}</h2>`;
+      }
+    };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  public createLogger(): (args: RouteArgs) => void {
+    return (args: RouteArgs): void => {
+      // eslint-disable-next-line no-console
+      console.info(`[leaving] args=${JSON.stringify(args)}`);
+    };
+  }
+
+  public generateId(): number {
     const getRandomNumber = (): number =>
-      Math.floor(Math.random() * listeners.length * 1000);
+      Math.floor(Math.random() * this.routes.length * 1000);
+
     const doesExist = (id: number): boolean =>
-      listeners.some((listener) => listener.id === id);
+      this.routes.some((route) => route.id === id);
 
     let id = getRandomNumber();
     while (doesExist(id)) {
       id = getRandomNumber();
     }
     return id;
-  };
+  }
 
-  const on = (
-    match: Match,
-    onEnter?: OnEnterOrLeave,
-    onLeave?: OnEnterOrLeave
-  ): (() => void) => {
-    const id = generateId();
-
-    const listener: Listener = { id, match, onEnter, onLeave };
-    listeners.push(listener);
-    handleListener(listener);
-
-    return (): void => {
-      listeners = listeners.filter((l) => l.id !== id);
-    };
-  };
-
-  const go = (url: string, state?: HistoryState): void => {
-    previousPath = currentPath;
-    // eslint-disable-next-line no-restricted-globals
-    history.pushState(state, "", url);
-    // eslint-disable-next-line no-restricted-globals
-    currentPath = location.pathname;
-
-    handleAllListeners();
-  };
-
-  window.addEventListener("popstate", handleAllListeners);
-
-  return { on, go };
+  public async navigate(path: string, state?: HistoryState): Promise<void> {
+    if (this.mode === "history") {
+      window.history.pushState(state, "", path);
+    } else {
+      window.location.hash = path;
+    }
+    await this.handleRouteChange();
+  }
 }
 
-// USAGE
-const createRender = (content: string) => (args: RenderArgs) => {
-  // eslint-disable-next-line no-console
-  console.info(`${content} args=${JSON.stringify(args)}`);
-  const rootElement = document.getElementById("root");
-  if (rootElement) {
-    rootElement.innerHTML = `<h2>${content}</h2>`;
-  }
-};
+const router = new Router("history");
+const unsubscriber = router.on(/.*/, router.createRender("/.*"));
+router.on((path) => path === "/contacts", router.createRender("/contacts"));
+router.on("/about", router.createRender("/about"), router.createLogger());
+router.on("/login", router.createRender("/login"), router.createLogger());
+router.on("/about/us", router.createRender("/about/us"), router.createLogger());
 
-const createLogger =
-  (content: string) =>
-  (args: RenderArgs): void => {
-    // eslint-disable-next-line no-console
-    console.info(`${content} args=${JSON.stringify(args)}`);
-  };
-
-const router = Router();
-
-const unsubscriber = router.on(/.*/, createRender("/.*"));
-router.on((path) => path === "/contacts", createRender("/contacts"));
-router.on("/about", createRender("/about"), createLogger("[leaving] /about"));
-router.on("/about/us", createRender("/about/us"));
-
-document.body.addEventListener("click", (event: Event): void => {
+document.body.addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
-  if (!target.matches("a")) {
-    return;
-  }
-  event.preventDefault();
-  const url = target.getAttribute("href");
-  if (url) {
-    router.go(url);
-    unsubscriber();
+  if (target.matches("a")) {
+    event.preventDefault();
+    const url = target.getAttribute("href");
+    if (url) {
+      router.navigate(url);
+      unsubscriber();
+    }
   }
 });
