@@ -25,7 +25,7 @@ interface Listener {
   onLeave?: AsyncRouteHandler;
 }
 
-class Router {
+export class Router {
   private routes: Listener[] = [];
 
   private mode: RouterMode;
@@ -187,3 +187,5 @@ document.body.addEventListener("click", (event) => {
     }
   }
 });
+
+export default Router;
