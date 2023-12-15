@@ -57,10 +57,17 @@ export class Router {
   }
 
   public getFragment(): string {
+    let fragment: string;
     if (this.mode === "history") {
-      return decodeURI(window.location.pathname + window.location.search);
+      fragment = decodeURI(window.location.pathname + window.location.search);
+      const PREFIX = "/otus-SPA-turarov-2023";
+      if (fragment.startsWith(PREFIX)) {
+        fragment = fragment.substring(PREFIX.length);
+      }
+    } else {
+      fragment = window.location.hash.slice(1);
     }
-    return window.location.hash.slice(1);
+    return fragment;
   }
 
   public async handleRouteChange(): Promise<void> {
