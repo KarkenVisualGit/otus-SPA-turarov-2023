@@ -1,22 +1,24 @@
+# [![codecov](https://codecov.io/gh/KarkenVisualGit/otus-SPA-turarov-2023/graph/badge.svg?token=X79X8vpccy)](https://codecov.io/gh/KarkenVisualGit/otus-SPA-turarov-2023/tree/otus-spa-2023)
+
 ## Report
 
-> :exclamation: No coverage uploaded for pull request base (`main@78c7f7f`). [Click here to learn what that means](https://docs.codecov.io/docs/error-reference?utm_medium=referral&utm_source=github&utm_content=checks&utm_campaign=pr+comments&utm_term=Karken+Turarov#section-missing-base-commit). The diff coverage is `n/a`.
+> :exclamation: No coverage uploaded for pull request base (`main@976e3e2`). [Click here to learn what that means](https://docs.codecov.io/docs/error-reference?utm_medium=referral&utm_source=github&utm_content=checks&utm_campaign=pr+comments&utm_term=Karken+Turarov#section-missing-base-commit). The diff coverage is `n/a`.
 
 ## Additional details and impacted files
 
 ```diff
 @@           Coverage Diff           @@
-##             main       #2   +/-   ##
+##             main       #1   +/-   ##
 =======================================
   Coverage        ?   84.81%
 =======================================
   Files           ?        1
   Lines           ?      191
-  Branches        ?       24
+  Branches        ?       22
 =======================================
-  Hits            ?      385
-  Misses          ?       20
-  Partials        ?        2
+  Hits            ?      162
+  Misses          ?       29
+  Partials        ?        0
 
 ```
 
