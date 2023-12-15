@@ -189,12 +189,12 @@ router.on("/contacts", router.createRender("/contacts"), router.createLogger());
 router.on("/login", router.createRender("/login"), router.createLogger());
 router.on("/about/us", router.createRender("/about/us"), router.createLogger());
 
-if (PRODUCTION) {
-  document.querySelectorAll("a").forEach((link) => {
-    const modifiedLink = link;
-    modifiedLink.href = PREFIX + link.pathname;
-  });
-}
+// if (PRODUCTION) {
+//   document.querySelectorAll("a").forEach((link) => {
+//     const modifiedLink = link;
+//     modifiedLink.href = PREFIX + link.pathname;
+//   });
+// }
 
 document.body.addEventListener("click", (event) => {
   const target = event.target as HTMLElement;
