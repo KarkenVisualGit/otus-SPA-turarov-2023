@@ -47,5 +47,11 @@ module.exports = {
       },
     ],
     "import/no-unresolved": "off",
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        devDependencies: ["**/webpack.config.ts"],
+      },
+    ],
   },
 };
